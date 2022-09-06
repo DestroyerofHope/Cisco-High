@@ -1,58 +1,59 @@
 # -*- coding: utf-8 -*-
 
-from openpyxl import load_workbook
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 
-class CH_Automation():
+class CH_Automation(object):
+    '''Creates the parent class with functions that are used in every sub-class'''
     
     def __init__(self):
+        '''Defines the parent variables, self.xlsxs is the dict of all of the Excel sheets defined'''
         self.uniquesites = {}
         self.xlsxs = {}
     
     def addXLSX(self, xlsx, name):
-        '''Created a workbook to manipulate the xlsx file; has to be fill address in this format:''' #var.addXLSX(r"C:\Users\jasoli3\Downloads\2022 Extern Details.xlsx")
-        workbook = load_workbook(filename=xlsx)
-        self.xlsxs[name] = [name + '1', name + '2']
-        self.xlsxs[name][0] = workbook.active
-        self.xlsxs[name][1] = pd.read_excel(xlsx)
-        self.xlsxs[name][1].dropna(how = 'all', inplace = True)
+        '''Creates a DataFrame and assigns it a name to be callable in the sub-classes; name is a str, xlsx has to be fill address in this format:''' # xlsx = r"C:\Users\jasoli3\Downloads\2022 Extern Details.xlsx"
+        self.xlsxs[name] = pd.read_excel(xlsx)
+        self.xlsxs[name].dropna(how = 'all', inplace = True)
 
-    def sort(self, name, columnnum, namecolumn = None):
-        columnname = self.xlsxs[name][0].cell(row = 1, column = columnnum).value
-        if namecolumn == None:
-            self.xlsxs[name][1].sort_values(by=columnname, inplace = True)
-        if type(namecolumn) == int:
-            columnname1 = self.xlsxs[name][0].cell(row = 1, column = namecolumn).value
-            self.xlsxs[name][1].sort_values(by=[columnname, columnname1], inplace = True)
-        self.xlsxs[name][1].reset_index(drop = True, inplace = True)
-        return self.xlsxs[name][1]
+    def sort(self, name, columnnum):
+        '''sort() sorts a named Excel sheet by a certian column. name is a str that has to match a corresponding Excel sheet added by addXLSX(). 
+        columnnum is a list that describes which columns to sort by level of importance.'''
+        columnname = []
+        for i in range(len(columnnum)):
+            self.df.keys()[i-1]
+        if type(columnnum) == list:
+            self.xlsxs[name].sort_values(by=columnname, inplace = True)
+        self.xlsxs[name].reset_index(drop = True, inplace = True)
+        return self.xlsxs[name]
 
-    def columnrange(self, name, column, namecolumn = None):
-        '''uniquesites works if the Excel self.xlsxs[name][0] is sorted by site and the column of site is names 'Sites'.//
-        initialrow and finalrow are type int for the initial and final roself.xlsxs[name][0] to search through. The function returns//
-        a dict of the unique sites in the Excel self.xlsxs[name][0] and the range of the roself.xlsxs[name][0] it spans.'''
+    def columnrange(self, name, column):
+        '''columnrange() returns a dict of the ranges in which a uniqe value occurs in a sorted, named DataFrame. name is a str that has to match a corresponding Excel sheet added by addXLSX().
+        columnnum is a int of the column that the ranges are to be retrieved from.'''
         self.uniquesites = {}
-        self.sort(name, column, namecolumn)
-        for i in self.xlsxs[name][1].index:
+        self.sort(name, [column])
+        for i in self.xlsxs[name].index:
             if i == 0:
-                self.uniquesites[self.xlsxs[name][1].values[i][column-1]] = [i]
+                self.uniquesites[self.xlsxs[name].values[i][column-1]] = [i]
             else:
-                if i < self.xlsxs[name][1].index[len(self.xlsxs[name][1].index)-1]:
-                    if self.xlsxs[name][1].values[i][column-1] != self.xlsxs[name][1].values[i+1][column-1]:
-                        self.uniquesites[self.xlsxs[name][1].values[i][column-1]].append(i)
-                        self.uniquesites[self.xlsxs[name][1].values[i+1][column-1]] = [i+1]
+                if i < self.xlsxs[name].index[len(self.xlsxs[name].index)-1]:
+                    if self.xlsxs[name].values[i][column-1] != self.xlsxs[name].values[i+1][column-1]:
+                        self.uniquesites[self.xlsxs[name].values[i][column-1]].append(i)
+                        self.uniquesites[self.xlsxs[name].values[i+1][column-1]] = [i+1]
                 else:
-                    self.uniquesites[self.xlsxs[name][1].values[i][column-1]].append(i)
+                    self.uniquesites[self.xlsxs[name].values[i][column-1]].append(i)
         return self.uniquesites
     
     def uniquevalcount(self, name, statcolumn, rows = None):
+        '''uniquevalcount() returns a dict of the number of times a unique values occurs in a column of a named DataFrame. name is a str that has to match a corresponding Excel sheet added by addXLSX().
+        statcolumn is the number of the column to be analyzed, rows is an optional call to manipulate the specific rows the algorithm searches through.'''
         uniqval = {}
-        columnname = self.xlsxs[name][0].cell(row = 1, column = statcolumn).value
-        vals = (self.xlsxs[name][1][columnname].dropna(how = 'all')).to_numpy()
+        columnname = self.df.keys()[statcolumn-1]
         if type(rows) == list:
-            vals = vals[rows[0]:rows[1]]
+            vals = ((self.xlsxs[name][columnname])[rows[0]:rows[1]+1]).dropna(how = 'all').to_numpy()
+        else:
+            vals = (self.xlsxs[name][columnname].dropna(how = 'all')).to_numpy()
         uniqvals = np.unique(vals)
         for i in uniqvals:
             uniqval[i] = 0
@@ -65,27 +66,35 @@ class CH_Automation():
 class Extern_Details(CH_Automation):
     
     def __init__(self, xlsx):
+        '''Creates an inheritance of variables and functions from CH_Automation(). xlsx is an Excel file which is to be named Extern_Details.'''
         CH_Automation.__init__(self)
         CH_Automation.addXLSX(self, xlsx, 'Extern_Details')
         self.uniquevals = {}
         self.name = 'Extern_Details'
-        
-        
+        self.df = self.xlsxs[self.name]
+
 class Demographics(Extern_Details):
     
     def __init__(self, xlsx):
+        '''Creates an inheritance of variables and functions from Extern_Details(). xlsx is an Excel file which is to be named Extern_Details.'''
         Extern_Details.__init__(self, xlsx)
         self.demostat = {}
     
     def demostatistics(self, statcolumn, rows = None):
-            vals, tot = CH_Automation.uniquevalcount(self, self.name, statcolumn, rows), 0
-            for i in vals:
-                tot += vals[i]
-            for i in vals:
-                vals[i] = str(round(vals[i]/tot * 100, 2)) + ' %'
-            return vals
+        '''demostatistics() returns a dict of the percentage that a unique value occurs in a certian column. statcolumn is the column number of the column that the algorithm searches, it's an int.
+        rows is an optional call that can be changed to change the rows the algorithm searches through, it's a list.'''
+        vals, tot = CH_Automation.uniquevalcount(self, self.name, statcolumn, rows), 0
+        for i in vals:
+            tot += vals[i]
+        for i in vals:
+            vals[i] = str(round(vals[i]/tot * 100, 2)) + ' %'
+        return vals
     
     def sitestat(self, sitename, sitecolumn, statcolumn):
+        '''sitestat() returns a dict of the percentage that a unique value occurs in a certian column per site. sitename is a str, sitecolumn is an int.
+        sitename corresponds to the name of a site in sitecolumn which is to be targeted.
+        statcolumn is the column number of the column that the algorithm searches, it's an int.
+        rows is an optional call that can be changed to change the rows the algorithm searches through, it's a list.'''
         sites, siterange = CH_Automation.columnrange(self, self.name, sitecolumn), ''
         for i in sites:
             if i == sitename:
@@ -94,7 +103,8 @@ class Demographics(Extern_Details):
         return sitestat
     
     def piechart(self, statcolumn):
-        title, label = self.sheet.cell(row = 1, column = statcolumn).value, []
+        '''piechart() generates a piechart according to the data from demostatistics(), statcolumn is a int corresponding to the column which the algorithm searches through.'''
+        title, label = self.df.keys()[statcolumn-1], []
         uniqval = CH_Automation.uniquevalcount(self, self.name, statcolumn)
         for i in uniqval:
             label.append(i)
@@ -107,7 +117,11 @@ class Demographics(Extern_Details):
         plt.show()
     
     def sitepiechart(self, sitename, sitecolumn, statcolumn):
-        title, label = self.xlsxs[self.name][0].cell(row = 1, column = statcolumn).value, []
+        '''sitepiechart() generates a piechart according to the data from sitestatistics(), sitename is a str, sitecolumn is an int.
+        sitename corresponds to the name of a site in sitecolumn which is to be targeted.
+        statcolumn is the column number of the column that the algorithm searches, it's an int.
+        rows is an optional call that can be changed to change the rows the algorithm searches through, it's a list.'''
+        title, label = self.df.keys()[statcolumn-1], []
         sites, siterange = CH_Automation.columnrange(self, self.name, sitecolumn), ''
         for i in sites:
             if i == sitename:
@@ -121,8 +135,8 @@ class Demographics(Extern_Details):
         values = np.array(values)
         plt.pie(values, labels = label)
         plt.title(title)
-        plt.show()    
-    
+        plt.show()
+
 class Capstone_Groups(Extern_Details):
     
     def __init__(self, xlsx):
@@ -188,7 +202,7 @@ class Capstone_Groups(Extern_Details):
     def defAttributes(self, namecolumn, sitecolumn, gendercolumn, racecolumn, rows = None):
         '''defAttribute creates a dict with the names of the externs and the numerical value associated with them. initialrow & finalrow are ints, representing the initial and final
             rows the algorithm searches through, namecolumn, sitecolumn, gendercolumn, and racecolumn are ints, they are the columns those details are located in.'''
-        dataframe = self.xlsxs[self.name][1].values
+        dataframe = self.df.values
         if rows == None:
             for i in range(len(dataframe)):
                 self.attr[dataframe[i][namecolumn-1]] = [self.assignNum(dataframe[i][sitecolumn-1]), self.assignNum(dataframe[i][gendercolumn-1]), self.assignNum(dataframe[i][racecolumn-1])]
@@ -300,35 +314,104 @@ class Capstone_Groups(Extern_Details):
 class CH_Swag(Extern_Details):
     
     def __init__(self, xlsx):
-        pass
-
-class Daily_Survey(CH_Automation):
+        Extern_Details.__init__(self, xlsx)
+        self.name = 'Extern_Details'
+        self.df = self.xlsxs[self.name]
+        self.createdf = {'Name':[], 'Type':[], 'Size':[], 'Email':[], 'Address': [], 'City':[], 'State':[], 'Country':[]}
     
+    def classifyAddress(self, address):
+        statelist = {'Alabama':'AL','Alaska':'AK','Arizona':'AZ','Arkansas':'AR','California':'CA','Colorado':'CO','Connecticut':'CT','Delaware':'DE','Florida':'FL','Georgia':'GA','Hawaii':'HI','Idaho':'ID','Illinois':'IL','Indiana':'IN',
+        'Iowa':'IA','Kansas':'KS','Kentucky':'KY','Louisiana':'LA','Maine':'ME','Maryland':'MD','Massachusetts':'MA','Michigan':'MI','Minnesota':'MN','Mississippi':'MS','Missouri':'MO','Montana':'MT','Nebraska':'NE','Nevada':'NV',
+        'New Hampshire':'NH','New Jersey':'NJ','New Mexico':'NM','New York':'NY','North Carolina':'NC','North Dakota':'ND','Ohio':'OH','Oklahoma':'OK','Oregon':'OR','Pennsylvania':'PA','Rhode Island':'RI','South Carolina':'SC',
+        'South Dakota':'SD','Tennessee':'TN','Texas':'TX','Utah':'UT','Vermont':'VT','Virginia':'VA','Washington':'WA','West Virginia':'WV','Wisconsin':'WI','Wyoming':'WY','Alberta':'AB','British Columbia':'BC','Manitoba':'MB',
+        'New Brunswick':'NB','Newfoundland and Labrador':'NL','Nova Scotia':'NS','Ontario':'ON','Prince Edward Island':'PE','Quebec':'QC','Saskatchewan':'SK'}
+        state, city, zipcode, country = '', '', '',''
+        actualaddress = ''
+        address = address.split(' ')
+        for i in range(len(address)):
+            address[i] = address[i].replace(',', '')
+            address[i] = address[i].replace('.', '')
+        for name in statelist:
+            for j in range(len(address)):
+                if name.lower() == address[j].lower() or statelist[name].lower() == address[j].lower():
+                    state = name
+                    statenum = j
+        if state != '':
+            city = address[statenum-1]
+            for i in range(statenum, len(address)):
+                if address[i].lower() in ['us', 'usa']:
+                    country = 'United States'
+                if address[i].lower() == 'united' and address[i+1].lower() == 'states':
+                    country = 'United States'
+                if address[i].lower() in ['canada', 'ca']:
+                    country = 'Canada'
+                try:
+                    if len(str(int(address[i]))) == 5:
+                        zipcode = str(address[i])
+                except:
+                    None
+                letternum, intnum = 0,0
+                if len(address[i]) == 6:
+                    letters = [*address[i]]
+                    for item in letters:
+                        try:
+                            if type(int(item)) == int:
+                                intnum += 1
+                        except:
+                            letternum += 1
+                    if letternum == 3 and intnum == 3:
+                        zipcode = address[i]
+                if len(address[i]) == 3 and len(address[i+1]) == 3:
+                    letters = [*(address[i]+address[i+1])]
+                    for item in letters:
+                        try:
+                            if type(int(item)) == int:
+                                intnum += 1
+                        except:
+                            letternum += 1
+                    if letternum == 3 and intnum == 3:
+                        zipcode = address[i] + address[i+1]
+            address = address[0:statenum-1]
+            for item in address:
+                actualaddress += item + ' '
+        else:
+            for item in address:
+                actualaddress += item + ' '
+            city, state, zipcode, country = None, None, None, None
+                
+        return actualaddress, city, state, zipcode, country
+    
+    def addDemographics(self, namecolumn, sizecolumn, emailcolumn, addresscolumn):
+        namecolumnname, sizecolumnname, emailcolumnname, addresscolumnname = self.df.keys()[namecolumn-1], self.df.keys()[sizecolumn-1], self.df.keys()[emailcolumn-1], self.df.keys()[addresscolumn-1]
+        self.createdf['Name'] = self.df[namecolumnname].to_numpy()
+        self.createdf['Size'] = self.df[sizecolumnname].to_numpy()
+        self.createdf['Email'] = self.df[emailcolumnname].to_numpy()
+        
+        return self.createdf
+    
+class Daily_Survey(CH_Automation):
+
     def __init__(self, xlsx):
         CH_Automation.__init__(self)
         CH_Automation.addXLSX(self, xlsx, 'Daily_Survey')
         self.uniquevals = {}
         self.sessionrating = {}
         self.name = 'Daily_Survey'
-        self.sheet = self.xlsxs[self.name][0]
-        self.df = self.xlsxs[self.name][1]
+        self.df = self.xlsxs[self.name]
         
     def sessionratings(self, sessioncolumn, ratingcolumn, rows = None, sort = False):
         if type(rows) == list and sort == True:
-            self.sort('Daily_Survey', 2)
-            sessionname, ratingname = self.sheet.cell(row = 1, column = sessioncolumn).value, self.sheet.cell(row = 1, column = ratingcolumn).value
-            sessionval, ratingval = self.df[sessionname].to_numpy()[rows[0]:rows[1]], self.df[ratingname].to_numpy()[rows[0]:rows[1]]
+            sessionname, ratingname = self.df.keys()[sessioncolumn-1], self.df.keys()[ratingcolumn-1]
+            sessionval, ratingval = self.df[sessionname].to_numpy()[rows[0]:rows[1]+1], self.df[ratingname].to_numpy()[rows[0]:rows[1]+1]
             sessionnum = CH_Automation.uniquevalcount(self, self.name, sessioncolumn, rows)
             uniqsessions = {}
-            uniq = np.unique((self.df[sessionname].dropna(how = 'all')).to_numpy()[rows[0]:rows[1]])
+            uniq = np.unique(((self.df[sessionname])[rows[0]:rows[1]+1]).dropna(how = 'all').to_numpy())
         else:
-            sessionname, ratingname = self.sheet.cell(row = 1, column = sessioncolumn).value, self.sheet.cell(row = 1, column = ratingcolumn).value
+            sessionname, ratingname = self.df.keys()[sessioncolumn-1], self.df.keys()[ratingcolumn-1]
             sessionval, ratingval = self.df[sessionname].to_numpy(), self.df[ratingname].to_numpy()
             sessionnum = CH_Automation.uniquevalcount(self, self.name, sessioncolumn, rows)
             uniqsessions = {}
-            uniq = np.unique(((self.df[sessionname].dropna(how = 'all')).to_numpy())[rows[0]:rows[1]])
-        #print(sessionval, ratingval)
-        print(sessionnum)
+            uniq = np.unique((self.df[sessionname].dropna(how = 'all')).to_numpy())
         for session in uniq:
             uniqsessions[session] = 0
         for i in range(len(sessionval)):
@@ -336,7 +419,7 @@ class Daily_Survey(CH_Automation):
                 if sessionval[i] == session:
                     if pd.notna(ratingval[i]):
                         uniqsessions[session] += int(str(ratingval[i])[0])
-        #return uniqsessions, sessionnum
+        return uniqsessions, sessionnum
     
     def totalsessionratings(self, sessioncolumn, ratingcolumn, rows = None, sort = None):
         sessionnum = {}
@@ -357,7 +440,6 @@ class Daily_Survey(CH_Automation):
                         sessionnum[session] += int(sessions[session])
                     except:
                         None
-            print(ratingnum, sessionnum)
             for session in ratingnum:
                 ratingnum[session] = round(ratingnum[session]/sessionnum[session], 2)
             return ratingnum
@@ -371,13 +453,46 @@ class Daily_Survey(CH_Automation):
                 siterange = sites[i]
         return self.totalsessionratings(sessioncolumn, ratingcolumn, siterange, sort = True)
     
+    def bargraph(self, sessioncolumn, ratingcolumn):
+        data = self.totalsessionratings(sessioncolumn, ratingcolumn)
+        sessions = list(data.keys())
+        ratings = list(data.values())
+        plt.bar(sessions, ratings)
+        plt.title('Session Ratings')
     
-    
+    def sitebargraph(self, sitename, sitecolumn, sessioncolumn, ratingcolumn):
+        data = self.siteratings(sitename, sitecolumn, sessioncolumn, ratingcolumn)
+        sessions = list(data.keys())
+        ratings = list(data.values())
+        plt.bar(sessions, ratings)
+        plt.title('Site Session Ratings')
+        
+    def externattendance(self, externname, namecolumn, sitecolumn, sessioncolumn):
+        namecolumnname, sitecolumnname = self.df.keys()[namecolumn-1], self.df.keys()[sitecolumn-1]
+        attendance = []
+        for i in range(len(self.df[namecolumnname])):
+            if self.df[namecolumnname][i] == externname:
+                sitename = self.df[sitecolumnname][i]
+        sites, siterange = CH_Automation.columnrange(self, self.name, sitecolumn), []
+        for i in sites:
+            if i == sitename:
+                siterange = sites[i]
+        for i in range(siterange[0], siterange[1]+1):
+            if externname == self.df.to_numpy()[i][namecolumn-1]:
+                for j in range(len(sessioncolumn)):
+                    if pd.notna(self.df.to_numpy()[i][sessioncolumn[j]-1]):
+                        attendance.append(self.df.to_numpy()[i][sessioncolumn[j]-1])
+        attendance = np.unique(np.array(attendance))
+        sitesessions = []
+        for i in range(siterange[0], siterange[1]+1):
+            for j in range(len(sessioncolumn)):
+                sitesessions.append(self.df.to_numpy()[i][sessioncolumn[j]-1])
+        sitesessions = (np.unique(np.array(sitesessions))).tolist()
+        for sessions in sitesessions:
+            for externsessions in attendance:
+                if sessions == externsessions:
+                    sitesessions.remove(sessions)
+        return sitesessions
 
-
-c = Daily_Survey(r"C:\Users\jasoli3\Downloads\Cisco High Externship Daily Survey (1).xlsx")
-#print(c.columnrange('Daily_Survey', 2))
-#print(c.totalsessionratings([4, 7, 8], [5, 9, 10]))
-#print(c.siteratings('ATL', 2, [4,7,8], [5,9,10]))
-print(c.sessionratings(4,5,[0,60], True))
+c = Demographics(r"C:\Users\jasoli3\Downloads\2022 Extern Details.xlsx")
 
